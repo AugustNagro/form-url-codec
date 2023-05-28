@@ -4,6 +4,8 @@ A simple Typeclass for deriving case-classes from `application/x-www-form-urlenc
 
 ## Installing
 
+This library requires Scala >= 3.3.0
+
 `"com.augustnagro" %% "form-url-codec" % "0.1.0"`
 
 ## Usage
