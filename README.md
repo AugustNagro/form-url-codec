@@ -41,6 +41,10 @@ val rawDecoded = FormUrlCodec.decodeRaw(
 ) // Vector("userName" -> "mike&dan", "age" -> "23")
 ```
 
+## Scaladoc
+
+https://javadoc.io/doc/com.augustnagro/form-url-codec_3/latest/index.html
+
 ## How to Test
 rootJVM/test;rootJS/test
 
