@@ -53,10 +53,6 @@ object FormUrlCodec:
     extension (i: Int) def formUrlEncode: String = i.toString
     def formUrlDecode(s: String): Int = decode(s).toInt
 
-  given FloatCodec: FormUrlCodec[Float] with
-    extension (f: Float) def formUrlEncode: String = f.toString
-    def formUrlDecode(s: String): Float = decode(s).toFloat
-
   given DoubleCodec: FormUrlCodec[Double] with
     extension (d: Double) def formUrlEncode: String = d.toString
     def formUrlDecode(s: String): Double = decode(s).toDouble
@@ -73,24 +69,65 @@ object FormUrlCodec:
     extension (uuid: UUID) def formUrlEncode: String = uuid.toString
     def formUrlDecode(s: String): UUID = UUID.fromString(decode(s))
 
-  inline given derived[A](using m: Mirror.ProductOf[A]): FormUrlCodec[A] =
+  inline given derived[A](using m: Mirror.Of[A]): FormUrlCodec[A] =
     type Mets = m.MirroredElemTypes
     type Mels = m.MirroredElemLabels
-    new FormUrlCodec[A]:
-      extension (a: A)
-        def formUrlEncode: String = encodeProduct[Mets, Mels](
-          a.asInstanceOf[Product],
-          Array.ofDim(constValue[Tuple.Size[Mets]])
+    type Label = m.MirroredLabel
+
+    inline m match
+      case p: Mirror.ProductOf[A] =>
+        new FormUrlCodec[A]:
+          extension (a: A)
+            def formUrlEncode: String = encodeProduct[Mets, Mels](
+              a.asInstanceOf[Product],
+              Array.ofDim(constValue[Tuple.Size[Mets]])
+            )
+          def formUrlDecode(s: String): A =
+            val kvArray = s
+              .split('&')
+              .map(kvString =>
+                kvString.split('=') match
+                  case Array(k, v) => (decode(k), decode(v))
+              )
+            val resArray = Array.ofDim[Any](constValue[Tuple.Size[Mets]])
+            decodeProduct[Mets, Mels, A](kvArray, resArray, p)
+      case s: Mirror.SumOf[A] =>
+        new FormUrlCodec[A]:
+          extension (a: A)
+            def formUrlEncode: String = encodeSum[Mets, Mels](s.ordinal(a))
+          def formUrlDecode(s: String): A =
+            decodeSum[A, Label, Mets, Mels](decode(s))
+    end match
+  end derived
+
+  private inline def encodeSum[Mets, Mels](ord: Int, i: Int = 0): String =
+    inline (erasedValue[Mets], erasedValue[Mels]) match
+      case _: (met *: metTail, mel *: melTail) =>
+        inline if !isSingleton[met] then
+          error("Only simple enums (no parameters) are supported")
+        if ord == i then encode(constValue[mel].toString)
+        else encodeSum[metTail, melTail](ord, i + 1)
+      case _: (EmptyTuple, EmptyTuple) => throw IllegalArgumentException()
+
+  private inline def decodeSum[A, Label, Mets, Mels](name: String): A =
+    inline (erasedValue[Mets], erasedValue[Mels]) match
+      case _: (EmptyTuple, EmptyTuple) =>
+        throw IllegalArgumentException(
+          s"$name is not a member of Sum type ${constValue[Label]}"
         )
-      def formUrlDecode(s: String): A =
-        val kvArray = s
-          .split('&')
-          .map(kvString =>
-            kvString.split('=') match
-              case Array(k, v) => (decode(k), decode(v))
-          )
-        val resArray = Array.ofDim[Any](constValue[Tuple.Size[Mets]])
-        decodeProduct[Mets, Mels, A](kvArray, resArray, m)
+      case _: (met *: metTail, mel *: melTail) =>
+        if name == constValue[mel] then
+          summonInline[Mirror.ProductOf[met & A]].fromProduct(EmptyTuple)
+        else decodeSum[A, Label, metTail, melTail](name)
+
+  /** A singleton is a Product with no parameter elements
+    */
+  private inline def isSingleton[T]: Boolean = summonFrom[T]:
+    case product: Mirror.ProductOf[T] =>
+      inline erasedValue[product.MirroredElemTypes] match
+        case _: EmptyTuple => true
+        case _             => false
+    case _ => false
 
   private inline def encodeProduct[Mets, Mels](
       p: Product,

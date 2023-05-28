@@ -41,7 +41,6 @@ val rawDecoded = FormUrlCodec.decodeRaw(
 ) // Vector("userName" -> "mike&dan", "age" -> "23")
 ```
 
-## Todo
-
-Support Scala 3 (simple) enums (look at native-converter code)
+## How to Test
+rootJVM/test;rootJS/test
 
