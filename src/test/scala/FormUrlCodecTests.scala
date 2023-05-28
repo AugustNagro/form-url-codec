@@ -42,14 +42,14 @@ class FormUrlCodecTests extends FunSuite:
       b = true,
       c = 1.toByte,
       d = -9473,
-      e = 2.345f,
+      e = 2f,
       f = 23.4583,
       g = 3947850L,
       h = 'x',
       i = UUID.fromString("cb34d6dc-5ded-47d9-a3a5-884b628a3673")
     )
     val encodedUser =
-      "a=dan%26mike&b=true&c=1&d=-9473&e=2.345&f=23.4583&g=3947850&h=x&i=cb34d6dc-5ded-47d9-a3a5-884b628a3673"
+      "a=dan%26mike&b=true&c=1&d=-9473&e=2&f=23.4583&g=3947850&h=x&i=cb34d6dc-5ded-47d9-a3a5-884b628a3673"
     assertEquals(u.formUrlEncode, encodedUser)
     assertEquals(summon[FormUrlCodec[User]].formUrlDecode(encodedUser), u)
 

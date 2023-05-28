@@ -3,8 +3,12 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / scalacOptions ++= Seq("-deprecation")
-ThisBuild / homepage := Some(url("https://github.com/AugustNagro/form-url-codec"))
-ThisBuild / licenses += ("Apache-2.0", url("https://opensource.org/licenses/Apache-2.0"))
+ThisBuild / homepage := Some(
+  url("https://github.com/AugustNagro/form-url-codec")
+)
+ThisBuild / licenses += ("Apache-2.0", url(
+  "https://opensource.org/licenses/Apache-2.0"
+))
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/AugustNagro/form-url-codec"),
@@ -31,9 +35,10 @@ ThisBuild / publishTo := {
 }
 ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
 
-lazy val root = project
+lazy val root = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
   .in(file("."))
   .settings(
     name := "form-url-codec",
-    libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test
+    libraryDependencies += "org.scalameta" %%% "munit" % "0.7.29" % Test
   )

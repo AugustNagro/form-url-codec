@@ -2,7 +2,7 @@ package com.augustnagro.formurlcodec
 
 import java.net.{URLDecoder, URLEncoder}
 import java.nio.charset.StandardCharsets
-import java.util.{UUID, StringJoiner}
+import java.util.UUID
 import scala.deriving.Mirror
 import scala.compiletime.*
 import scala.collection.mutable as m
@@ -78,8 +78,10 @@ object FormUrlCodec:
     type Mels = m.MirroredElemLabels
     new FormUrlCodec[A]:
       extension (a: A)
-        def formUrlEncode: String =
-          encodeProduct[Mets, Mels](a.asInstanceOf[Product])
+        def formUrlEncode: String = encodeProduct[Mets, Mels](
+          a.asInstanceOf[Product],
+          Array.ofDim(constValue[Tuple.Size[Mets]])
+        )
       def formUrlDecode(s: String): A =
         val kvArray = s
           .split('&')
@@ -92,18 +94,18 @@ object FormUrlCodec:
 
   private inline def encodeProduct[Mets, Mels](
       p: Product,
-      i: Int = 0,
-      sj: StringJoiner = StringJoiner("&")
+      andParts: Array[String],
+      i: Int = 0
   ): String =
     inline (erasedValue[Mets], erasedValue[Mels]) match
       case _: (EmptyTuple, EmptyTuple) =>
-        sj.toString
+        andParts.mkString("&")
       case _: (met *: metTail, mel *: melTail) =>
         val key = encode(constValue[mel].toString)
         val codec = summonInline[FormUrlCodec[met]]
         val value = codec.formUrlEncode(p.productElement(i).asInstanceOf[met])
-        sj.add(key + "=" + value)
-        encodeProduct[metTail, melTail](p, i + 1, sj)
+        andParts(i) = key + "=" + value
+        encodeProduct[metTail, melTail](p, andParts, i + 1)
 
   private inline def decodeProduct[Mets, Mels, A](
       kv: Array[(String, String)],
