@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.augustnagro"
-ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / version := "0.1.0"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / scalacOptions ++= Seq("-deprecation")
@@ -34,6 +34,7 @@ ThisBuild / publishTo := {
     Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+ThisBuild / publish / skip := true
 
 lazy val root = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -41,4 +42,10 @@ lazy val root = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "form-url-codec",
     libraryDependencies += "org.scalameta" %%% "munit" % "0.7.29" % Test
+  )
+  .jsSettings(
+    publish / skip := false
+  )
+  .jvmSettings(
+    publish / skip := false
   )
