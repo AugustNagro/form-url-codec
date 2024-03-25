@@ -30,6 +30,7 @@ object FormUrlCodec:
       .map(kvString =>
         kvString.split('=') match
           case Array(k, v) => (decode(k), decode(v))
+          case Array(k)    => (decode(k), "")
       )
       .toVector
 
@@ -69,6 +70,16 @@ object FormUrlCodec:
     extension (uuid: UUID) def formUrlEncode: String = uuid.toString
     def formUrlDecode(s: String): UUID = UUID.fromString(decode(s))
 
+  given OptionCodec[A](using aCodec: FormUrlCodec[A]): FormUrlCodec[Option[A]]
+  with
+    extension (opt: Option[A])
+      def formUrlEncode: String =
+        opt.map(aCodec.formUrlEncode).getOrElse("")
+    def formUrlDecode(s: String): Option[A] =
+      s match
+        case "" => None
+        case x  => Some(aCodec.formUrlDecode(x))
+
   inline given derived[A](using m: Mirror.Of[A]): FormUrlCodec[A] =
     type Mets = m.MirroredElemTypes
     type Mels = m.MirroredElemLabels
@@ -88,6 +99,7 @@ object FormUrlCodec:
               .map(kvString =>
                 kvString.split('=') match
                   case Array(k, v) => (decode(k), decode(v))
+                  case Array(k)    => (decode(k), "")
               )
             val resArray = Array.ofDim[Any](constValue[Tuple.Size[Mets]])
             decodeProduct[Mets, Mels, A](kvArray, resArray, p)
